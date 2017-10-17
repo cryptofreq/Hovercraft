@@ -1,0 +1,137 @@
+#include <Psx.h>  
+#include <Servo.h>
+
+
+int error = 0;
+Servo hover, left, right;
+int p=20;
+unsigned int data = 0;
+
+Psx psx;
+
+int escHover = 7;
+int escLeft = 6;
+int escRight = 5;
+
+int minPulseRate = 1000;
+int maxPulseRate = 2000;
+int throttleChangeDelay = 100;
+
+void setup(){
+
+Serial.begin(9600);
+
+//s1.attach(6); s2.attach(5); s3.attach(3);
+
+hover.attach(escHover, minPulseRate, maxPulseRate);
+left.attach(escLeft, minPulseRate, maxPulseRate);
+right.attach(escRight, minPulseRate, maxPulseRate);
+
+hover.write(0);
+left.write(0);
+right.write(0);
+ 
+
+//data,cmd,att,clock,delay
+
+psx.setupPins(13,11,10,12,50);
+
+}
+
+void loop(){
+  
+//Serial.println("Engaged");
+data = psx.read();
+
+if(data & psxUp) {
+
+  Forward();
+  Serial.println("Run!");
+
+}
+
+if(data & psxRight){
+
+  steerRight();
+  Serial.print("Turn Right!");
+
+}
+
+if(data & psxLeft){
+
+  steerLeft();
+  Serial.print("Turn Left!");
+
+}
+
+if(data & psxX){
+  
+    allStop();
+    Serial.println("All Stopped!");
+    }
+
+if(data & psxTri){
+
+    changeThrottle(35);
+    
+    //Serial.println("Floating!"); 
+    }
+
+delay(50);
+
+}
+
+void changeThrottle(int throttle) {
+  
+  // Read the current throttle value
+  int currentThrottle = readThrottle();
+
+   
+  // Are we going up or down?
+  int step = 1;
+  if( throttle < currentThrottle )
+    step = -1;
+  
+  // Slowly move to the new throttle value 
+  while( currentThrottle != throttle ) {
+    hover.write(currentThrottle + step);
+    currentThrottle = readThrottle();
+    delay(throttleChangeDelay);
+  }
+  
+}
+
+int readThrottle() {
+  int throttle = hover.read();
+  
+  Serial.print("Current throttle is: ");
+  Serial.println(throttle);
+  
+  return throttle;
+}
+
+void steerRight(){
+  right.write(70);
+  
+  delay(1500);
+  right.write(0);
+  
+}
+
+void steerLeft(){
+  left.write(70);
+  delay(1500);
+  left.write(0);
+}
+
+void Forward(){
+  right.write(60);
+  left.write(60);
+  
+}
+
+void allStop(){
+  left.write(0);
+  right.write(0);
+  changeThrottle(0);
+}
